@@ -55,6 +55,60 @@
             /* Darker orange */
         }
 
+        /* Tab Navigation Styles (Main Categories) */
+        .tab-nav {
+            display: flex;
+            justify-content: center;
+            /* Center the tabs */
+            border-bottom: 3px solid #7f8c8d;
+            background-color: #34495e;
+            padding: 0 20px;
+            /* Keep horizontal padding */
+        }
+
+        .tab-nav button {
+            background-color: transparent;
+            /* Make default transparent */
+            color: #bdc3c7;
+            border: none;
+            border-bottom: 4px solid transparent;
+            /* Thicker border for active state */
+            padding: 18px 30px;
+            /* Increased padding */
+            margin: 0 8px;
+            /* Add some space between tabs */
+            border-radius: 0;
+            /* Remove rounding for a flatter look */
+            cursor: pointer;
+            font-size: 1.2em;
+            /* Larger font */
+            font-weight: 500;
+            /* Slightly bolder */
+            transition: color 0.2s ease, border-bottom-color 0.2s ease;
+            position: relative;
+        }
+
+        .tab-nav button:hover {
+            background-color: transparent;
+            /* No background change on hover */
+            color: #ecf0f1;
+            /* Lighter text on hover */
+        }
+
+        .tab-nav button.active {
+            background-color: transparent;
+            /* No background change */
+            color: #e67e22;
+            /* Orange accent for active text */
+            border-bottom: 4px solid #e67e22;
+            /* Orange underline for active */
+            font-weight: 700;
+            /* Bolder active text */
+        }
+
+        /* End Main Category Tab Styles */
+
+
         #filter-container {
             background-color: #34495e;
             padding: 15px;
@@ -90,29 +144,54 @@
             padding: 20px;
         }
 
-        #catalog-container>section>h2 {
-            /* Category Header - No longer needed as main title */
+        /* Brand Tab Styles */
+        #brand-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            /* Allow tabs to wrap on smaller screens */
+            margin-bottom: 20px;
+            border-bottom: 1px solid #7f8c8d;
+        }
+
+        #brand-tabs button {
+            background-color: transparent;
+            color: #bdc3c7;
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 10px 15px;
+            margin-right: 5px;
+            margin-bottom: -1px;
+            /* Overlap container border */
+            cursor: pointer;
+            font-size: 1em;
+            transition: color 0.2s ease, border-bottom-color 0.2s ease;
+        }
+
+        #brand-tabs button:hover {
+            color: #ecf0f1;
+        }
+
+        #brand-tabs button.active {
+            color: #e67e22;
+            border-bottom: 2px solid #e67e22;
+            font-weight: bold;
+        }
+
+        /* End Brand Tab Styles */
+
+        /* Brand Content Pane Styles */
+        .brand-content {
             display: none;
+            /* Hide content panes by default */
         }
 
-        #catalog-container section section h3 {
-            /* Brand Header */
-            color: #bdc3c7;
-            /* Lighter silver */
-            border-bottom: 1px solid #7f8c8d;
-            padding-bottom: 8px;
-            margin-top: 25px;
-            margin-bottom: 15px;
-            font-size: 1.4em;
+        .brand-content.active {
+            display: block;
+            /* Show active content pane */
         }
 
-        #catalog-container h2 {
-            color: #bdc3c7;
-            /* Lighter silver */
-            border-bottom: 1px solid #7f8c8d;
-            padding-bottom: 10px;
-            margin-top: 30px;
-        }
+        /* End Brand Content Pane Styles */
+
 
         #catalog-container section {
             /* Brand section */
@@ -185,9 +264,9 @@
 <body>
     <header>
         <h1>Catálogo</h1>
-        <nav id="category-nav">
-            <!-- Category buttons will be added here -->
-        </nav>
+        <div class="tab-nav" id="category-nav">
+            <!-- Category tab buttons will be added here -->
+        </div>
     </header>
 
     <main>
@@ -201,17 +280,53 @@
     </main>
 
     <script>
+        // Helper function to format number as currency string
+        function formatPrice(number, currency = '$') {
+            // Ensure it's a number, default to 0 if not
+            const num = Number(number) || 0;
+            // Format with dots as thousands separators, no decimals for these prices
+            return `${currency} ${num.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+        }
+
         // Define the Product class
         class Producto {
             constructor(categoria, marca, nombre, precioEfectivo, precio3Cuotas) {
                 this.Categoria = categoria;
                 this.Marca = marca;
                 this.Nombre = nombre;
-                // Store price as number for easier filtering
-                this.PrecioEfectivoNum = this.parsePrice(precioEfectivo);
-                this.Precio3CuotasNum = this.parsePrice(precio3Cuotas); // Optional: parse if needed for filtering
-                this.PrecioEfectivoStr = precioEfectivo; // Keep original string for display
-                this.Precio3CuotasStr = precio3Cuotas; // Keep original string for display
+
+                const maxIncrease = 120000;
+
+                // Parse initial prices
+                let initialPrecioEfectivoNum = this.parsePrice(precioEfectivo);
+                let initialPrecio3CuotasNum = this.parsePrice(precio3Cuotas);
+
+                // Calculate 10% increase for Efectivo
+                let increaseEfectivo = initialPrecioEfectivoNum * 0.10;
+                // Apply the minimum of the 10% increase or the max increase
+                let actualIncreaseEfectivo = Math.min(increaseEfectivo, maxIncrease);
+                // Calculate final numeric price
+                this.PrecioEfectivoNum = initialPrecioEfectivoNum + actualIncreaseEfectivo;
+
+                // Calculate 10% increase for 3 Cuotas (only if it's a valid number > 0)
+                let actualIncrease3Cuotas = 0;
+                if (initialPrecio3CuotasNum > 0) {
+                    let increase3Cuotas = initialPrecio3CuotasNum * 0.10;
+                    actualIncrease3Cuotas = Math.min(increase3Cuotas, maxIncrease);
+                }
+                this.Precio3CuotasNum = initialPrecio3CuotasNum + actualIncrease3Cuotas;
+
+
+                // Update string representations with formatted new prices
+                // Determine currency symbol based on original string
+                const efectivoCurrency = precioEfectivo.trim().startsWith('ARS') ? 'ARS' : '$';
+                const cuotasCurrency = precio3Cuotas.trim().startsWith('ARS') ? 'ARS' : '$';
+
+                this.PrecioEfectivoStr = formatPrice(this.PrecioEfectivoNum, efectivoCurrency);
+                // Only format 3 cuotas if it was originally present
+                this.Precio3CuotasStr = (precio3Cuotas && precio3Cuotas !== 'N/A' && initialPrecio3CuotasNum > 0)
+                    ? formatPrice(this.Precio3CuotasNum, cuotasCurrency)
+                    : 'N/A';
             }
 
             // Helper to convert price string to number
@@ -294,7 +409,7 @@
             return products;
         }
 
-        // Display products for the current category (filtered or all)
+        // Display products for the current category using Brand Tabs
         function displayProducts(productsToDisplay) {
             const container = document.getElementById('catalog-container');
             container.innerHTML = ''; // Clear previous content
@@ -304,7 +419,7 @@
                 return;
             }
 
-            // Group products by Brand for display
+            // Group products by Brand
             const productsByBrand = productsToDisplay.reduce((acc, product) => {
                 const brand = product.Marca || 'Varios';
                 if (!acc[brand]) {
@@ -314,18 +429,51 @@
                 return acc;
             }, {});
 
-            // Generate HTML for each brand within the category
-            for (const brand in productsByBrand) {
-                const brandSection = document.createElement('section');
-                const brandHeader = document.createElement('h3');
-                // Avoid repeating category name if brand is the same
-                brandHeader.textContent = (brand.toUpperCase() === currentCategory?.toUpperCase()) ? `${brand} Productos` : brand;
-                brandSection.appendChild(brandHeader);
+            const brands = Object.keys(productsByBrand).sort();
+
+            // Create Brand Tab Navigation
+            const brandTabsContainer = document.createElement('div');
+            brandTabsContainer.id = 'brand-tabs';
+
+            // Create Brand Content Panes Container
+            const brandContentsContainer = document.createElement('div');
+            brandContentsContainer.id = 'brand-contents';
+
+            brands.forEach((brand, index) => {
+                // Create Tab Button
+                const tabButton = document.createElement('button');
+                tabButton.textContent = brand;
+                tabButton.dataset.brandTarget = `brand-${brand.replace(/\s+/g, '-')}`; // Create unique ID target
+                if (index === 0) {
+                    tabButton.classList.add('active'); // Activate first tab
+                }
+                tabButton.addEventListener('click', (e) => {
+                    // Deactivate other tabs/content
+                    brandTabsContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    brandContentsContainer.querySelectorAll('.brand-content').forEach(content => content.classList.remove('active'));
+                    // Activate clicked tab/content
+                    e.target.classList.add('active');
+                    document.getElementById(e.target.dataset.brandTarget).classList.add('active');
+                });
+                brandTabsContainer.appendChild(tabButton);
+
+                // Create Content Pane for the Brand
+                const brandContentDiv = document.createElement('div');
+                brandContentDiv.id = `brand-${brand.replace(/\s+/g, '-')}`;
+                brandContentDiv.className = 'brand-content';
+                if (index === 0) {
+                    brandContentDiv.classList.add('active'); // Show first content pane
+                }
 
                 const productGrid = document.createElement('div');
                 productGrid.className = 'product-grid';
 
-                productsByBrand[brand].forEach(product => {
+                // --- Sort products by price descending ---
+                const sortedProducts = productsByBrand[brand].sort((a, b) => b.PrecioEfectivoNum - a.PrecioEfectivoNum);
+                // --- End sort ---
+
+                // Iterate over sorted products
+                sortedProducts.forEach(product => {
                     const productCard = document.createElement('article');
                     productCard.className = 'product-card';
                     let priceHtml = `<p>Efectivo: <span class="price">${product.PrecioEfectivoStr}</span></p>`;
@@ -333,25 +481,28 @@
                         priceHtml += `<p>3 Cuotas: <span class="price">${product.Precio3CuotasStr}</span></p>`;
                     }
 
-                    // --- WhatsApp Button Logic ---
-                    const whatsappNumber = "5491139260579"; // Ensure no '+' or spaces for wa.me link
+                    // WhatsApp Button Logic - uses the updated PrecioEfectivoStr
+                    const whatsappNumber = "5491139260579";
                     const messageBase = `Hola, estoy interesado en este producto: ${product.Nombre} - Precio Efectivo: ${product.PrecioEfectivoStr}`;
                     const encodedMessage = encodeURIComponent(messageBase);
                     const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
                     const whatsappButtonHtml = `<a href="${whatsappLink}" target="_blank" class="whatsapp-button">🛒 Comprar</a>`;
-                    // --- End WhatsApp Button Logic ---
 
                     productCard.innerHTML = `
                         <h4>${product.Nombre}</h4>
                         ${priceHtml}
-                        ${whatsappButtonHtml} <!-- Add the button here -->
+                        ${whatsappButtonHtml}
                     `;
                     productGrid.appendChild(productCard);
                 });
 
-                brandSection.appendChild(productGrid);
-                container.appendChild(brandSection);
-            }
+                brandContentDiv.appendChild(productGrid);
+                brandContentsContainer.appendChild(brandContentDiv);
+            });
+
+            // Append Brand Tabs and Content Panes to the main container
+            container.appendChild(brandTabsContainer);
+            container.appendChild(brandContentsContainer);
         }
 
         // Populate filter controls based on current category products
