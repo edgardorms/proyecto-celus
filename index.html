@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Catálogo iMode</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50;
+            /* Dark blue-gray */
+            color: #ecf0f1;
+            /* Light gray */
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #34495e;
+            /* Slightly lighter blue-gray */
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #7f8c8d;
+            /* Silver-gray */
+        }
+
+        header h1 {
+            margin: 0;
+            color: #ecf0f1;
+            text-shadow: 1px 1px 2px #1a252f;
+        }
+
+        nav {
+            background-color: #34495e;
+            padding: 10px 20px;
+            text-align: center;
+            border-bottom: 1px solid #7f8c8d;
+        }
+
+        nav button {
+            background-color: #e67e22;
+            color: #ecf0f1;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease;
+        }
+
+        nav button:hover,
+        nav button.active {
+            background-color: #d35400;
+            /* Darker orange */
+        }
+
+        #filter-container {
+            background-color: #34495e;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            display: none;
+            /* Hidden by default */
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        #filter-container label {
+            margin-right: 5px;
+            color: #bdc3c7;
+        }
+
+        #filter-container select,
+        #filter-container input[type="number"],
+        #filter-container input[type="text"] {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #7f8c8d;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        #filter-container input[type="number"] {
+            width: 80px;
+        }
+
+        #catalog-container {
+            padding: 20px;
+        }
+
+        #catalog-container>section>h2 {
+            /* Category Header - No longer needed as main title */
+            display: none;
+        }
+
+        #catalog-container section section h3 {
+            /* Brand Header */
+            color: #bdc3c7;
+            /* Lighter silver */
+            border-bottom: 1px solid #7f8c8d;
+            padding-bottom: 8px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        #catalog-container h2 {
+            color: #bdc3c7;
+            /* Lighter silver */
+            border-bottom: 1px solid #7f8c8d;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+
+        #catalog-container section {
+            /* Brand section */
+            margin-bottom: 30px;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background-color: #34495e;
+            /* Slightly lighter blue-gray */
+            border: 1px solid #7f8c8d;
+            /* Silver-gray */
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-card h4 {
+            /* Product Name */
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #ecf0f1;
+        }
+
+        .product-card p {
+            margin: 5px 0;
+            font-size: 0.9em;
+            color: #bdc3c7;
+            /* Lighter silver */
+        }
+
+        .product-card .price {
+            font-weight: bold;
+            color: #e67e22;
+            /* Orange accent */
+        }
+
+        .whatsapp-button {
+            display: inline-block;
+            background-color: #25D366;
+            /* WhatsApp Green */
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+            text-align: center;
+        }
+
+        .whatsapp-button:hover {
+            background-color: #128C7E;
+            /* Darker WhatsApp Green */
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Catálogo</h1>
+        <nav id="category-nav">
+            <!-- Category buttons will be added here -->
+        </nav>
+    </header>
+
+    <main>
+        <div id="filter-container">
+            <!-- Filters will be added here -->
+        </div>
+        <div id="catalog-container">
+            <!-- Initial message will be replaced on load -->
+            <p>Cargando catálogos...</p>
+        </div>
+    </main>
+
+    <script>
+        // Define the Product class
+        class Producto {
+            constructor(categoria, marca, nombre, precioEfectivo, precio3Cuotas) {
+                this.Categoria = categoria;
+                this.Marca = marca;
+                this.Nombre = nombre;
+                // Store price as number for easier filtering
+                this.PrecioEfectivoNum = this.parsePrice(precioEfectivo);
+                this.Precio3CuotasNum = this.parsePrice(precio3Cuotas); // Optional: parse if needed for filtering
+                this.PrecioEfectivoStr = precioEfectivo; // Keep original string for display
+                this.Precio3CuotasStr = precio3Cuotas; // Keep original string for display
+            }
+
+            // Helper to convert price string to number
+            parsePrice(priceStr) {
+                if (!priceStr || typeof priceStr !== 'string') return 0;
+                // Remove currency symbols (ARS, $), dots (thousands separators), convert comma decimal separator if needed
+                const cleaned = priceStr.replace(/ARS|\$|\./g, '').replace(',', '.').trim();
+                return parseFloat(cleaned) || 0;
+            }
+        }
+
+        let allProductsData = {};
+        // Store all products grouped by category
+        let currentCategory = null;
+        // Track the currently selected category
+        let currentProducts = [];
+        // Products of the current category
+
+        // Generalized CSV Parser
+        function parseCsvData(csvText, categoryName) {
+            const lines = csvText.split(/\r?\n/);
+            const products = [];
+            let currentBrand = "General"; // Default brand if none detected before products
+
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine || trimmedLine === ',,') return; // Skip empty or spacer lines
+
+                const columns = trimmedLine.split(',');
+                const cleanedColumns = columns.map(col => col.trim().replace(/^"|"$/g, ''));
+
+                // Detect header row
+                if (cleanedColumns.length >= 2 &&
+                    cleanedColumns[1]?.toUpperCase().includes('EFECTIVO') &&
+                    (cleanedColumns[2]?.toUpperCase().includes('CUOTAS') || cleanedColumns.length === 2)) {
+                    if (cleanedColumns[0] && cleanedColumns[0].toUpperCase() !== categoryName.toUpperCase() && !cleanedColumns[0].startsWith('🎮')) { // Avoid using emoji header as brand
+                        currentBrand = cleanedColumns[0];
+                    } else {
+                        // Use category name as brand if first column is category or emoji header
+                        currentBrand = categoryName;
+                    }
+                    return; // Skip header row
+                }
+
+                // Detect product row (Name, Price1, Price2)
+                // Check if the second column looks like a price ($ or ARS or number)
+                const priceIndicator = cleanedColumns[1]?.toUpperCase();
+                if (cleanedColumns.length >= 2 && cleanedColumns[0] && priceIndicator && (priceIndicator.startsWith('$') || priceIndicator.startsWith('ARS') || !isNaN(parseFloat(priceIndicator.replace(/[^0-9.,]+/g, ''))))) {
+                    // Use first column as name, even if it starts with emoji
+                    const productName = cleanedColumns[0];
+                    const precioEfectivo = cleanedColumns[1] || 'N/A';
+                    const precio3Cuotas = cleanedColumns[2] || 'N/A';
+
+                    // If currentBrand is still 'General' or the category name, try to infer brand from product name if possible
+                    let productBrand = currentBrand;
+                    if (productBrand === 'General' || productBrand === categoryName) {
+                        if (productName.toUpperCase().includes('PS5')) productBrand = 'PlayStation';
+                        // Add more inferences if needed
+                    }
+
+
+                    const product = new Producto(
+                        categoryName,
+                        productBrand, // Use inferred or header brand
+                        productName,
+                        precioEfectivo,
+                        precio3Cuotas
+                    );
+                    products.push(product);
+                }
+                // Handle lines with only a name (less common now)
+                else if (cleanedColumns.length === 1 && cleanedColumns[0] && !cleanedColumns[0].includes(',')) {
+                    // Treat this as a new 'brand' or sub-category within the current category, unless it's an emoji header
+                    if (!cleanedColumns[0].startsWith('🎮')) {
+                        currentBrand = cleanedColumns[0];
+                    }
+                }
+            });
+            console.log(`Parsed ${categoryName}:`, products);
+            return products;
+        }
+
+        // Display products for the current category (filtered or all)
+        function displayProducts(productsToDisplay) {
+            const container = document.getElementById('catalog-container');
+            container.innerHTML = ''; // Clear previous content
+
+            if (productsToDisplay.length === 0) {
+                container.innerHTML = '<p>No hay productos que coincidan con los filtros seleccionados.</p>';
+                return;
+            }
+
+            // Group products by Brand for display
+            const productsByBrand = productsToDisplay.reduce((acc, product) => {
+                const brand = product.Marca || 'Varios';
+                if (!acc[brand]) {
+                    acc[brand] = [];
+                }
+                acc[brand].push(product);
+                return acc;
+            }, {});
+
+            // Generate HTML for each brand within the category
+            for (const brand in productsByBrand) {
+                const brandSection = document.createElement('section');
+                const brandHeader = document.createElement('h3');
+                // Avoid repeating category name if brand is the same
+                brandHeader.textContent = (brand.toUpperCase() === currentCategory?.toUpperCase()) ? `${brand} Productos` : brand;
+                brandSection.appendChild(brandHeader);
+
+                const productGrid = document.createElement('div');
+                productGrid.className = 'product-grid';
+
+                productsByBrand[brand].forEach(product => {
+                    const productCard = document.createElement('article');
+                    productCard.className = 'product-card';
+                    let priceHtml = `<p>Efectivo: <span class="price">${product.PrecioEfectivoStr}</span></p>`;
+                    if (product.Precio3CuotasStr && product.Precio3CuotasStr !== 'N/A') {
+                        priceHtml += `<p>3 Cuotas: <span class="price">${product.Precio3CuotasStr}</span></p>`;
+                    }
+
+                    // --- WhatsApp Button Logic ---
+                    const whatsappNumber = "5491139260579"; // Ensure no '+' or spaces for wa.me link
+                    const messageBase = `Hola, estoy interesado en este producto: ${product.Nombre} - Precio Efectivo: ${product.PrecioEfectivoStr}`;
+                    const encodedMessage = encodeURIComponent(messageBase);
+                    const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+                    const whatsappButtonHtml = `<a href="${whatsappLink}" target="_blank" class="whatsapp-button">🛒 Comprar</a>`;
+                    // --- End WhatsApp Button Logic ---
+
+                    productCard.innerHTML = `
+                        <h4>${product.Nombre}</h4>
+                        ${priceHtml}
+                        ${whatsappButtonHtml} <!-- Add the button here -->
+                    `;
+                    productGrid.appendChild(productCard);
+                });
+
+                brandSection.appendChild(productGrid);
+                container.appendChild(brandSection);
+            }
+        }
+
+        // Populate filter controls based on current category products
+        function populateFilters() {
+            const filterContainer = document.getElementById('filter-container');
+            filterContainer.innerHTML = ''; // Clear existing filters
+            filterContainer.style.display = 'flex'; // Show filters
+
+            if (!currentCategory || !allProductsData[currentCategory]) return;
+
+            currentProducts = allProductsData[currentCategory];
+            const brands = [...new Set(currentProducts.map(p => p.Marca || 'Varios'))].sort();
+
+            // Brand Filter
+            let brandOptions = '<option value="all">Todas las Marcas</option>';
+            brands.forEach(brand => {
+                brandOptions += `<option value="${brand}">${brand}</option>`;
+            });
+            const brandFilterHtml = `
+
+                <div>
+                    <label for="brand-filter">Marca:</label>
+                    <select id="brand-filter">${brandOptions}</select>
+                </div>`;
+
+            // Price Filter
+            const priceFilterHtml = `
+                <div>
+                    <label for="min-price">Precio Min:</label>
+                    <input type="number" id="min-price" placeholder="0">
+                </div>
+                <div>
+                    <label for="max-price">Precio Max:</label>
+                    <input type="number" id="max-price" placeholder="Sin límite">
+                </div>`;
+
+            // Name Filter
+            const nameFilterHtml = `
+                <div>
+                    <label for="name-filter">Buscar Nombre:</label>
+                    <input type="text" id="name-filter" placeholder="Ej: iPhone 15">
+                </div>`;
+
+            filterContainer.innerHTML = brandFilterHtml + priceFilterHtml + nameFilterHtml;
+
+            // Add event listeners to filters
+            document.getElementById('brand-filter').addEventListener('change', applyFilters);
+            document.getElementById('min-price').addEventListener('input', applyFilters);
+            document.getElementById('max-price').addEventListener('input', applyFilters);
+            document.getElementById('name-filter').addEventListener('input', applyFilters);
+        }
+
+        // Apply filters and update display
+        function applyFilters() {
+            const selectedBrand = document.getElementById('brand-filter').value;
+            const minPrice = parseFloat(document.getElementById('min-price').value) || 0;
+            const maxPrice = parseFloat(document.getElementById('max-price').value) || Infinity;
+            const nameQuery = document.getElementById('name-filter').value.toLowerCase();
+
+            const filteredProducts = currentProducts.filter(product => {
+                const brandMatch = selectedBrand === 'all' || product.Marca === selectedBrand;
+                const priceMatch = product.PrecioEfectivoNum >= minPrice && product.PrecioEfectivoNum <= maxPrice;
+                const nameMatch = !nameQuery || product.Nombre.toLowerCase().includes(nameQuery);
+                return brandMatch && priceMatch && nameMatch;
+            });
+
+            displayProducts(filteredProducts);
+        }
+
+
+        // Function to fetch, parse, and setup categories
+        async function loadAndSetupCatalogs() {
+            const container = document.getElementById('catalog-container');
+            const navContainer = document.getElementById('category-nav');
+            // Exclude ACC APPLE
+            const filesToLoad = [
+                { path: 'Lista - iMode . - CELULARES.csv', category: 'Celulares' },
+                { path: 'Lista - iMode - COMPUTACIÓN .csv', category: 'Computación' },
+                { path: 'Lista - iMode - CONSOLAS.csv', category: 'Consolas' }
+            ];
+            allProductsData = {}; // Reset data
+
+            try {
+                const responses = await Promise.all(filesToLoad.map(file => fetch(file.path)));
+
+                for (let i = 0; i < responses.length; i++) {
+                    if (!responses[i].ok) {
+                        throw new Error(`HTTP error! status: ${responses[i].status} for file ${filesToLoad[i].path}`);
+                    }
+                }
+
+                const texts = await Promise.all(responses.map(res => res.text()));
+
+                // Parse and store data
+                navContainer.innerHTML = ''; // Clear existing nav
+                for (let i = 0; i < texts.length; i++) {
+                    const category = filesToLoad[i].category;
+                    allProductsData[category] = parseCsvData(texts[i], category);
+
+                    // Create category button
+                    const button = document.createElement('button');
+                    button.textContent = category;
+                    button.dataset.category = category; // Store category name in data attribute
+                    button.addEventListener('click', (e) => {
+                        // Update active button style
+                        document.querySelectorAll('#category-nav button').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+
+                        // Set current category and display
+                        currentCategory = e.target.dataset.category;
+                        populateFilters(); // Setup filters for this category
+                        applyFilters(); // Display products (initially unfiltered)
+                    });
+                    navContainer.appendChild(button);
+                }
+
+                // --- Select "Celulares" by default ---
+                const defaultCategoryButton = navContainer.querySelector('button[data-category="Celulares"]');
+                if (defaultCategoryButton) {
+                    defaultCategoryButton.click(); // Simulate click to load filters and products
+                } else {
+                    // Fallback if "Celulares" category wasn't found or loaded
+                    container.innerHTML = '<p>Categoría por defecto "Celulares" no encontrada. Selecciona una categoría.</p>';
+                }
+                // --- End default selection ---
+
+                console.log("All CSV Data Processed and Stored:", allProductsData);
+
+            } catch (error) {
+                console.error("Error loading or parsing CSV files:", error);
+                container.innerHTML = `<p>Error al cargar los catálogos. Verifique que los archivos CSV existan y la consola para más detalles. Error: ${error.message}</p>`;
+                document.getElementById('filter-container').style.display = 'none'; // Hide filters on error
+            }
+        }
+
+        // Load the catalogs when the page loads
+        window.onload = loadAndSetupCatalogs;
+    </script>
+</body>
+
+</html>
