@@ -405,7 +405,6 @@
                     }
                 }
             });
-            console.log(`Parsed ${categoryName}:`, products);
             return products;
         }
 
@@ -637,10 +636,9 @@
                 }
                 // --- End default selection ---
 
-                console.log("All Google Sheet Data Processed and Stored:", allProductsData);
+
 
             } catch (error) {
-                console.error("Error loading or parsing Google Sheet data:", error);
                 container.innerHTML = `<p>Error al cargar los catálogos desde Google Sheets. Verifique la URL, la configuración de compartición de la hoja (debe ser pública) y la consola para más detalles. Error: ${error.message}</p>`;
                 document.getElementById('filter-container').style.display = 'none'; // Hide filters on error
             }
