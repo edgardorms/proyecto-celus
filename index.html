@@ -573,33 +573,41 @@
         }
 
 
-        // Function to fetch, parse, and setup categories
+        // Function to fetch, parse, and setup categories from Google Sheets
         async function loadAndSetupCatalogs() {
             const container = document.getElementById('catalog-container');
             const navContainer = document.getElementById('category-nav');
-            // Exclude ACC APPLE
+            const sheetId = '1DVXusOshL9RvSOPeb3JRPqLe1GKAFVSyt6rY0pAe6sQ';
+            const baseSheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=`;
+
+            // --- Update to use Google Sheet URLs ---
             const filesToLoad = [
-                { path: 'Lista - iMode . - CELULARES.csv', category: 'Celulares' },
-                { path: 'Lista - iMode - COMPUTACIÓN .csv', category: 'Computación' },
-                { path: 'Lista - iMode - CONSOLAS.csv', category: 'Consolas' }
+                { path: `${baseSheetUrl}celulares`, category: 'Celulares' },
+                { path: `${baseSheetUrl}computacion`, category: 'Computación' },
+                { path: `${baseSheetUrl}consolas`, category: 'Consolas' }
             ];
+            // --- End URL update ---
+
             allProductsData = {}; // Reset data
 
             try {
+                // Fetch from the Google Sheet URLs
                 const responses = await Promise.all(filesToLoad.map(file => fetch(file.path)));
 
                 for (let i = 0; i < responses.length; i++) {
                     if (!responses[i].ok) {
-                        throw new Error(`HTTP error! status: ${responses[i].status} for file ${filesToLoad[i].path}`);
+                        // Provide more specific error for potential CORS or Sheet access issues
+                        throw new Error(`HTTP error! status: ${responses[i].status} for sheet ${filesToLoad[i].category}. Check Sheet sharing settings (must be public) or CORS policy.`);
                     }
                 }
 
                 const texts = await Promise.all(responses.map(res => res.text()));
 
-                // Parse and store data
+                // Parse and store data (rest of the logic remains the same)
                 navContainer.innerHTML = ''; // Clear existing nav
                 for (let i = 0; i < texts.length; i++) {
                     const category = filesToLoad[i].category;
+                    // Pass the fetched CSV text to the existing parser
                     allProductsData[category] = parseCsvData(texts[i], category);
 
                     // Create category button
@@ -629,11 +637,11 @@
                 }
                 // --- End default selection ---
 
-                console.log("All CSV Data Processed and Stored:", allProductsData);
+                console.log("All Google Sheet Data Processed and Stored:", allProductsData);
 
             } catch (error) {
-                console.error("Error loading or parsing CSV files:", error);
-                container.innerHTML = `<p>Error al cargar los catálogos. Verifique que los archivos CSV existan y la consola para más detalles. Error: ${error.message}</p>`;
+                console.error("Error loading or parsing Google Sheet data:", error);
+                container.innerHTML = `<p>Error al cargar los catálogos desde Google Sheets. Verifique la URL, la configuración de compartición de la hoja (debe ser pública) y la consola para más detalles. Error: ${error.message}</p>`;
                 document.getElementById('filter-container').style.display = 'none'; // Hide filters on error
             }
         }
